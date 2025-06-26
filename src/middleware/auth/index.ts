@@ -4,7 +4,7 @@ import { User } from '../../models/user';
 
 export const authMiddleware = async (req: any, res: any, next: NextFunction) => {
     const token = req.cookies.token;
-    
+
     try {
       if (!token) {
         throw new Error("Token not found");

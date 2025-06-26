@@ -6,16 +6,52 @@ import express, {
 } from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
-import { interviewRouter } from "./routes/interview-invitation";
+import { interviewRouter } from "./routes/interview";
 
 dotenv.config();
 
 export const app = express();
 
-app.use(express.json());
+// Improved CORS configuration
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // For development, allow all origins
+    // In production, specify exact origins like ['http://localhost:4200', 'https://yourdomain.com']
+    const allowedOrigins = [
+      'http://localhost:4200',
+      'http://localhost:3000',
+      'http://127.0.0.1:4200',
+      'http://127.0.0.1:3000',
+      'https://resume.shortcomponents4u.com'
+    ];
+    
+    // For development, allow all origins
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // For production, check against allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // Allow cookies and credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  exposedHeaders: ['Set-Cookie']
+}));
+
+// Important: Add cookie parser before routes
 app.use(cookieParser());
+app.use(express.json());
 
 app.use("/authentication", authRouter);
 app.use("/user", userRouter);

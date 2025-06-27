@@ -6,7 +6,6 @@ import express, {
 } from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import process from 'process'
 import cors from "cors";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";

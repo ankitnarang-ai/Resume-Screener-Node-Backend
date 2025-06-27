@@ -1,7 +1,6 @@
 // This file is used to send emails using Brevo (formerly SendinBlue) API.
 import SibApiV3Sdk from 'sib-api-v3-sdk';
 import dotenv from "dotenv";
-import process from 'process'
 dotenv.config();
 
 const apiKey = process.env.BREVO_API_KEY; 

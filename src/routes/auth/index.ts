@@ -3,7 +3,6 @@ import { authMiddleware } from "../../middleware/auth";
 import bcrypt from 'bcrypt';
 import { User } from '../../models/user/index';
 import jwt from "jsonwebtoken";
-import process from 'process'
 
 export const authRouter = Router();
 

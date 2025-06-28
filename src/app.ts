@@ -10,6 +10,7 @@ import cors from "cors";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { interviewRouter } from "./routes/interview";
+import morgan from 'morgan';
 
 dotenv.config();
 
@@ -48,6 +49,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   exposedHeaders: ['Set-Cookie']
 }));
+
+app.use(morgan('dev'));
 
 // Important: Add cookie parser before routes
 app.use(cookieParser());

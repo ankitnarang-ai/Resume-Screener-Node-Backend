@@ -10,7 +10,7 @@ export const authMiddleware = async (req: any, res: any, next: NextFunction) => 
         throw new Error("Token not found");
       }
   
-      const decoded = jwt.verify(token, 'secret');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
       if (!decoded) {
          throw new Error("Invalid token")

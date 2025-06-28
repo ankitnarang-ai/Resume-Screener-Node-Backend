@@ -94,7 +94,12 @@ authRouter.post("/public/logout", async (req: Request, res: Response) => {
 
   try {
     // Clear cookie with same options as when set
-    res.clearCookie('token', COOKIE_OPTIONS);
+    res.clearCookie('token', {
+      httpOnly: true, // Should match
+      secure: isProduction, // THIS IS CRITICAL - MUST MATCH THE SETTING
+      sameSite: isProduction ? 'none' : 'lax', // THIS IS CRITICAL - MUST MATCH THE SETTING
+      path: '/' // Should match
+  });
 
     res.send('Logged out successfully');
   } catch (error) {
@@ -105,6 +110,9 @@ authRouter.post("/public/logout", async (req: Request, res: Response) => {
 // Add token verification endpoint
 authRouter.get("/verify-token", authMiddleware, async (req: Request, res: Response) => {
   try {
+
+    console.log("enter");
+    
     // If middleware passes, token is valid
     res.send({
       message: "Token is valid",

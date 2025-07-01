@@ -4,7 +4,6 @@ import bcrypt from 'bcrypt';
 import { User } from '../../models/user/index';
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
-import { request } from "http";
 
 export const authRouter = Router();
 
@@ -48,6 +47,7 @@ authRouter.post("/public/signup", async (req: Request, res: Response) => {
     await user.save();
     res.send({
       message: "User created successfully",
+      user: user
     });
   } catch (error) {
     res.status(400).send({

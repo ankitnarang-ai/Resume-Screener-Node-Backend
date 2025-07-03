@@ -2,6 +2,7 @@ import {Router, Request, Response} from "express";
 import { authMiddleware } from "../../middleware/auth";
 import { User } from "../../models/user";
 import { log } from "console";
+import { Hr } from "../../models/hr";
 
 
 export const userRouter = Router();
@@ -28,14 +29,26 @@ userRouter.get("/profile", authMiddleware, async ( req: any, res: Response) => {
   }
 })
 
-userRouter.put("/role", async( req: any, res: Response) => {
+userRouter.put("/role", authMiddleware, async( req: any, res: Response) => {
   try {
 
     const {userId, role} = req.body;
+    const {firstName, lastName, email} = req.user;
 
     const updatedUser = await User.findOneAndUpdate({_id: userId}, {role: role});
 
-    console.log("updated user", updatedUser);
+    // ✅ If role is 'hr', create HR profile
+    if (role === 'hr') {
+      const hr = new Hr({
+        _user: userId,
+        firstName,
+        lastName,
+        email,
+        resumeCount: 0
+      });
+      await hr.save();
+    }
+
     
 
     res.send({

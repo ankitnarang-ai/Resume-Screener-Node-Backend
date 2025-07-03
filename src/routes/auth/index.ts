@@ -4,14 +4,15 @@ import bcrypt from 'bcrypt';
 import { User } from '../../models/user/index';
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const authRouter = Router();
 
 // Initialize Google OAuth2Client with your GOOGLE_CLIENT_ID
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 if (!GOOGLE_CLIENT_ID) {
-  console.error("GOOGLE_CLIENT_ID is not defined in environment variables!");
-  // In a real app, you might want to throw an error or exit if this is critical
+  throw new Error("❌ GOOGLE_CLIENT_ID must be set in production!");
 }
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
@@ -24,37 +25,60 @@ const COOKIE_OPTIONS = {
   path: '/'
 };
 
-authRouter.post("/public/signup", async (req: Request, res: Response) => {
-
+authRouter.post("/public/signup", async (req: any, res: any) => {
   try {
-    const { firstName, lastName, email, password, role } = req.body;
+    const { firstName, lastName, email, password } = req.body;
+
+    // ✅ Validate input
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // ✅ Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists with this email" });
+    }
+
+    // ✅ Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
+    // ✅ Create new user
     const user = new User({
       firstName,
       lastName,
       email,
-      role,
       password: passwordHash
-    })
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      throw new Error("User already exists with this email");
-    }
-
-    await user.save();
-    res.send({
-      message: "User created successfully",
-      user: user
     });
+
+    await user.save(); // Save user
+
+    // ✅ Create token
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET || 'fallback-secret',
+      { expiresIn: isProduction ? "15m" : "24h" }
+    );
+
+    // ✅ Set auth cookie
+    res.cookie("token", token, COOKIE_OPTIONS);
+
+    // ✅ Send success response
+    return res.status(201).json({
+      message: "User created and logged in",
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role
+      }
+    });
+
   } catch (error) {
-    res.status(400).send({
-      message: "Error creating user",
-    });
+    console.error("❌ Signup error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
-
 });
 
 /** Login api */

@@ -3,15 +3,18 @@ import { User } from "../../models/user";
 import { Interview } from "../../models/interview";
 import mongoose from "mongoose";
 import { Roles, InterviewType, InterviewStatus } from "../../constants/enum";
-import { InviteBody } from "../../interfaces/interview";
 import { sendInterviewInvite } from "../../Utils/email";
+import { Hr } from "../../models/hr";
 
 // Interview invitation handler
 export const interviewInvitationHandler = async (
-  req: Request<{}, {}, InviteBody>,
+  req: any,
   res: Response
 ) => {
-  const { candidateEmail, candidateName, hrId, interviewType } = req.body;
+
+  const hrId = req.user._id; // Get HR ID from authenticated user
+
+  const { candidateEmail, candidateName, interviewType } = req.body;
 
   // Body already validated by middleware at this point
 
@@ -34,6 +37,10 @@ export const interviewInvitationHandler = async (
         { new: true, upsert: true, session }
       );
 
+      if(candidate.role === 'hr') {
+        throw new Error("Cannot invite an HR as a candidate");
+      }
+
       // Create interview
       interviewDoc = await Interview.create(
         [
@@ -54,6 +61,15 @@ export const interviewInvitationHandler = async (
         subject: "You're Invited for an Interview",
         message: `Hi ${candidate.firstName},<br><br>You have been scheduled for a <b>${interviewType}</b> interview.<br><br>Good luck!`
       });
+
+      console.log("hrid", hrId);
+      
+
+      await Hr.findOneAndUpdate(
+        { _user: hrId },
+        { $inc: { interviewInvitation: 1 } },
+        { new: true, useFindAndModify: false, session }
+      );
     });
 
     res.status(201).json({
@@ -62,7 +78,7 @@ export const interviewInvitationHandler = async (
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Could not create interview invitation" });
+    res.status(500).json({ message: err.message });
   } finally {
     session.endSession();
   }
@@ -70,10 +86,13 @@ export const interviewInvitationHandler = async (
 
 // Interview rejection handler
 export const interviewRejectionHandler = async (
-  req: Request<{}, {}, InviteBody>,
+  req: any,
   res: Response
 ) => {
-  const { candidateEmail, candidateName, hrId, interviewType } = req.body;
+
+  const hrId = req.user._id; // Get HR ID from authenticated user
+
+  const { candidateEmail, candidateName } = req.body;
 
   // Body already validated by middleware at this point
 
@@ -89,6 +108,12 @@ export const interviewRejectionHandler = async (
         subject: "You're Invited for an Interview",
         message: `Hi ${candidateName},<br><br>Sorry this time we are not proceed with your application<b>`
       });
+      
+      await Hr.findOneAndUpdate(
+        { _user: hrId },
+        { $inc: { interviewRejection: 1 } },
+        { new: true, useFindAndModify: false, session }
+      );
     });
 
     res.status(201).json({

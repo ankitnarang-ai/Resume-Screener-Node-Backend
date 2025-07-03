@@ -4,15 +4,14 @@ import express, {
   NextFunction,
   ErrorRequestHandler,
 } from "express";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { interviewRouter } from "./routes/interview";
 import morgan from 'morgan';
-
-dotenv.config();
+import { resumeUploadAndProcess } from "./controllers/resumes";
+import { resumeRouter } from "./routes/resumes";
 
 export const app = express();
 
@@ -29,6 +28,7 @@ app.use(cors({
       'http://localhost:3000',
       'http://127.0.0.1:4200',
       'http://127.0.0.1:3000',
+      'http://localhost:8000',
       'https://resume.shortcomponents4u.com'
     ];
     
@@ -59,6 +59,7 @@ app.use(express.json());
 app.use("/authentication", authRouter);
 app.use("/user", userRouter);
 app.use("/interview", interviewRouter);
+app.use("/resume", resumeRouter)
 
 /** Global Error handling */
 app.use( "/", ( error: ErrorRequestHandler, req: Request, res: Response, next: NextFunction ) => {

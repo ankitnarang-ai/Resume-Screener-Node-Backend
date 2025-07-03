@@ -12,15 +12,18 @@
   "license": "ISC",
   "dependencies": {
     "@types/cors": "^2.8.19",
+    "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "form-data": "^4.0.3",
     "google-auth-library": "^10.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.1",
     "sib-api-v3-sdk": "^8.5.0"
   },
   "devDependencies": {

@@ -29,7 +29,7 @@ app.use(cors({
       'http://127.0.0.1:4200',
       'http://127.0.0.1:3000',
       'http://localhost:8000',
-      'https://resume.shortcomponents4u.com'
+      'https://app.shortcomponents4u.com'
     ];
     
     // For development, allow all origins

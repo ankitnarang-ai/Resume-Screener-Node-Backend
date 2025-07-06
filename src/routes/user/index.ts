@@ -32,15 +32,15 @@ userRouter.get("/profile", authMiddleware, async ( req: any, res: Response) => {
 userRouter.put("/role", authMiddleware, async( req: any, res: Response) => {
   try {
 
-    const {userId, role} = req.body;
-    const {firstName, lastName, email} = req.user;
+    const { role} = req.body;
+    const {firstName, lastName, email, _id} = req.user;
 
-    const updatedUser = await User.findOneAndUpdate({_id: userId}, {role: role});
+    const updatedUser = await User.findOneAndUpdate({_id}, {role: role}, {upsert: true, new: true});
 
     // ✅ If role is 'hr', create HR profile
     if (role === 'hr') {
       const hr = new Hr({
-        _user: userId,
+        _user: _id,
         firstName,
         lastName,
         email,

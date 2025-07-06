@@ -59,7 +59,7 @@ app.use(express.json());
 app.use("/authentication", authRouter);
 app.use("/user", userRouter);
 app.use("/interview", interviewRouter);
-app.use("/resume", resumeRouter)
+app.use("/resume", resumeRouter);
 
 /** Global Error handling */
 app.use( "/", ( error: ErrorRequestHandler, req: Request, res: Response, next: NextFunction ) => {

@@ -141,22 +141,18 @@ authRouter.post("/public/logout", async (req: Request, res: Response) => {
   }
 })
 
-authRouter.post('/public/google', async (req: Request, res: Response): Promise<void> => {
-  const { token: idToken } = req.body; // Renaming 'token' to 'idToken' for clarity
+authRouter.post('/public/google-signup', async (req: Request, res: any): Promise<void> => {
+  const { token: idToken } = req.body;
 
-
-  console.log("request received for Google auth"); // More descriptive log
-  
   if (!idToken) {
     res.status(400).json({ message: 'Google ID token is missing.' });
     return;
   }
 
   try {
-    // Verify the Google ID Token
     const ticket = await googleClient.verifyIdToken({
-      idToken: idToken,
-      audience: GOOGLE_CLIENT_ID, // Ensure the token's audience matches your Client ID
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
     });
 
     const payload = ticket.getPayload();
@@ -164,68 +160,111 @@ authRouter.post('/public/google', async (req: Request, res: Response): Promise<v
       throw new Error("Invalid Google token payload");
     }
 
-    const googleId = payload.sub; // Google's unique user ID
+    const googleId = payload.sub;
     const email = payload.email;
-    const firstName = payload.given_name || payload.name; // Use given_name, fallback to full name
-    const lastName = payload.family_name || ''; // Use family_name
-    const picture = payload.picture; // Profile picture URL
 
-    // --- User Management Logic (Integrate with your User Model) ---
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      // If user doesn't exist, create a new one with 'hr' role
-      user = new User({
-        googleId: googleId, // Store Google ID for future lookups
-        firstName,
-        lastName,
-        email,
-        picture, // Store profile picture URL
-        role: 'hr', // Set role to 'hr' for newly created Google users
-      });
-
-      await user.save();
-      console.log('New user registered via Google with HR role:', user.email);
-    } else {
-      // User exists, check if they previously logged in via Google
-      if (!user.googleId) {
-        // Link existing user account to Google ID if not already linked
-        user.googleId = googleId;
-        user.picture = picture; // Update picture if it changed
-        await user.save();
-        console.log('Existing user linked to Google:', user.email);
-      }
-      console.log('Existing user logged in via Google:', user.email);
+    // ❌ If user already exists, don't signup
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists" });
     }
 
-    // --- Generate Your Application's JWT ---
-    // The token payload should contain enough info to identify the user in your system
+    const user = new User({
+      googleId,
+      email,
+      firstName: payload.given_name || payload.name,
+      lastName: payload.family_name || '',
+      picture: payload.picture,
+      role: 'hr'
+    });
+
+    await user.save();
+
     const appToken = jwt.sign(
-      { id: user._id, email: user.email, googleId: user.googleId }, // Use user._id from your DB
+      { id: user._id, email: user.email },
       process.env.JWT_SECRET || 'fallback-secret-for-dev',
-      { expiresIn: isProduction ? "15m" : "24h" } // Your app's token expiry
+      { expiresIn: isProduction ? "15m" : "24h" }
     );
 
-    // Set your app's JWT in an HttpOnly cookie
     res.cookie("token", appToken, COOKIE_OPTIONS);
 
-    res.status(200).json({
-      message: 'Google authentication successful',
+    res.status(201).json({
+      message: "Google signup successful",
       user: {
-        id: user._id, // Send back your internal user ID
+        id: user._id,
+        email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email,
         picture: user.picture,
         role: user.role
       }
     });
 
   } catch (error: any) {
-    console.error('Error during Google authentication:', error.message);
-    res.status(401).json({
-      message: isProduction ? "Google authentication failed" : `Google authentication failed: ${error.message}`
+    res.status(401).json({ message: "Google signup failed" });
+  }
+});
+
+authRouter.post('/public/google-login', async (req: Request, res: any): Promise<void> => {
+  const { token: idToken } = req.body;
+
+  if (!idToken) {
+    res.status(400).json({ message: 'Google ID token is missing.' });
+    return;
+  }
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
     });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.sub || !payload.email) {
+      throw new Error("Invalid Google token payload");
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email;
+
+    const user = await User.findOne({ email });
+
+    // ❌ If user doesn't exist, don't allow login
+    if (!user) {
+      return res.status(404).json({ message: "No user found with this Google account" });
+    }
+
+    // ✅ If user exists but has no googleId, link it
+    if (!user.googleId) {
+      user.googleId = googleId;
+      user.picture = payload.picture;
+      await user.save();
+    }
+
+    // ✅ Create app token
+    const appToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET || 'fallback-secret-for-dev',
+      { expiresIn: isProduction ? "15m" : "24h" }
+    );
+
+    res.cookie("token", appToken, COOKIE_OPTIONS);
+
+    res.status(200).json({
+      message: "Google login successful",
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        picture: user.picture,
+        role: user.role
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Google login error:', error.message);
+    res.status(401).json({ message: "Google login failed" });
   }
 });
 

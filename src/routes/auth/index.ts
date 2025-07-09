@@ -100,7 +100,7 @@ authRouter.post("/public/login", async (req: Request, res: Response) => {
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET || 'fallback-secret-for-dev', // Always have a fallback
-      { expiresIn: isProduction ? "15m" : "24h" } // Shorter expiry in production
+      { expiresIn: isProduction ? "12h" : "24h" } // Shorter expiry in production
     );
 
     // Set cookie with proper options for cross-origin requests
@@ -269,7 +269,7 @@ authRouter.post('/public/google-login', async (req: Request, res: any): Promise<
 });
 
 // Add token verification endpoint
-authRouter.get("/verify-token", authMiddleware, async (req: Request, res: Response) => {
+authRouter.get("/verify-token", authMiddleware, async (req: any, res: any) => {
   try {
 
     console.log("enter");
@@ -277,7 +277,8 @@ authRouter.get("/verify-token", authMiddleware, async (req: Request, res: Respon
     // If middleware passes, token is valid
     res.send({
       message: "Token is valid",
-      valid: true
+      valid: true,
+      user: req.user 
     });
   } catch (error) {
     res.status(401).send({

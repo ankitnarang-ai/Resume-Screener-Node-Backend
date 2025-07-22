@@ -14,7 +14,7 @@ export const interviewInvitationHandler = async (
 
   const hrId = req.user._id; // Get HR ID from authenticated user
 
-  const { candidateEmail, candidateName, interviewType } = req.body;
+  const { candidateEmail, candidateName, interviewType, jobDescription } = req.body;
 
   // Body already validated by middleware at this point
 
@@ -37,33 +37,41 @@ export const interviewInvitationHandler = async (
         { new: true, upsert: true, session }
       );
 
-      if(candidate.role === 'hr') {
+      if (candidate.role === 'hr') {
         throw new Error("Cannot invite an HR as a candidate");
       }
 
       // Create interview
       interviewDoc = await Interview.create(
-        [
+         [ 
           {
             _hr: hrId,
             _candidate: candidate._id,
-            status: InterviewStatus.SCHEDULED,
+            interviewDetails: { status: InterviewStatus.ACTIVE, jobDescription },
             type: interviewType as InterviewType
           }
         ],
         { session }
       );
 
+      const interviewId = interviewDoc[0]._id.toString();
+
+      if(!hrId || !candidate._id || !interviewId) {
+        throw new Error ('HRID, CandidateID and Interview ID any of them is missing ')
+      }
+      
       // Enqueue email
-     await sendInterviewInvite({
+      await sendInterviewInvite({
         to: candidate.email,
         name: candidate.firstName,
         subject: "You're Invited for an Interview",
-        message: `Hi ${candidate.firstName},<br><br>You have been scheduled for a <b>${interviewType}</b> interview.<br><br>Good luck!`
+        message: `Hi ${candidate.firstName},<br><br>You have been scheduled for a <b>${interviewType}</b> interview.<br><br>
+        <a href="http://localhost:4200/ai-interview?uid=${candidate._id}&hrId=${hrId}&inteviewId=${interviewId}" style="padding: 10px 15px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px; display: inline-block;">
+          👉 Click here to Start Interview
+        </a><br><br>
+        
+        Good luck!`
       });
-
-      console.log("hrid", hrId);
-      
 
       await Hr.findOneAndUpdate(
         { _user: hrId },
@@ -74,7 +82,7 @@ export const interviewInvitationHandler = async (
 
     res.status(201).json({
       message: "Interview invitation created",
-      interviewId: interviewDoc[0]._id
+      interviewId: interviewDoc[0]
     });
   } catch (err) {
     console.error(err);
@@ -100,15 +108,15 @@ export const interviewRejectionHandler = async (
 
   try {
     await session.withTransaction(async () => {
-     
+
       // Enqueue email
-     await sendInterviewInvite({
+      await sendInterviewInvite({
         to: candidateEmail,
         name: candidateEmail,
         subject: "You're Invited for an Interview",
         message: `Hi ${candidateName},<br><br>Sorry this time we are not proceed with your application<b>`
       });
-      
+
       await Hr.findOneAndUpdate(
         { _user: hrId },
         { $inc: { interviewRejection: 1 } },

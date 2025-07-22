@@ -10,16 +10,32 @@ const interviewSchema = new Schema<IInterview>({
     type: Schema.Types.ObjectId,
     required: true
   },
-  type: {
-    type: String,
-    enum: ["ai", "human"],
-    default: "human"
-  },
-  status: {
-    type: String,
-    enum: ["scheduled", "completed", "cancelled"],
-    default: "scheduled"
-  }
+  interviewDetails: 
+    {
+      company: {
+        type: String,
+        required: false 
+      },
+      jobDescription: {
+        type: String,
+        required: true
+      },
+      expireAt: {
+        type: Date,
+        required: false
+      },
+      duration: {
+        type: Number,
+        required: false
+      },
+      status: {
+        type: String,
+        enum: ['active' , 'complete' , 'expired' , 'inactive'],
+        required: true,
+        default: 'inactive'
+      }
+    }
+  
 }, {
   timestamps: true
 });

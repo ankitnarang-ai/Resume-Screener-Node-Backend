@@ -1,11 +1,22 @@
 import { Types } from "mongoose";
 
+// Enum for interview status
+export type InterviewStatus = 'active' | 'complete' | 'expired' | 'inactive';
+
+// Single interview object
+export interface Interview {
+  company?: string;
+  jobDescription: string;
+  expireAt?: Date;
+  duration?: number;
+  status: InterviewStatus;
+}
+
 export interface IInterview {
   _id: Types.ObjectId;
   _hr: Types.ObjectId; 
   _candidate: Types.ObjectId;
-  type: "ai" | "human";
-  status: "scheduled" | "completed" | "cancelled";
+  interviewDetails: Interview;
 }
 
 export interface InviteBody {

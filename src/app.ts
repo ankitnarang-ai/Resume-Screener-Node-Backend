@@ -4,6 +4,7 @@ import express, {
   NextFunction,
   ErrorRequestHandler,
 } from "express";
+import http from 'http'
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { authRouter } from "./routes/auth";
@@ -12,8 +13,12 @@ import { interviewRouter } from "./routes/interview";
 import morgan from 'morgan';
 import { resumeUploadAndProcess } from "./controllers/resumes";
 import { resumeRouter } from "./routes/resumes";
+import { initWebsocket } from "./websocket";
 
 export const app = express();
+
+export const httpServer = http.createServer(app);
+initWebsocket(httpServer) // Because websocket needs protocol which express can't provide so we create http server from it we creawte web socket server.
 
 // Improved CORS configuration
 app.use(cors({

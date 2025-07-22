@@ -26,7 +26,7 @@ export const sendInterviewInvite = async ({
 
   const sendSmtpEmail = {
     to: [{ email: to, name }],
-    sender: { email: senderEmail, name: 'ShortComponents4u' },
+    sender: { email: senderEmail, name: 'Hire Catalyze' },
     subject,
     htmlContent: `<html><body><p>${message}</p></body></html>`
   };

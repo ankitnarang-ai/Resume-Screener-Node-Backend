@@ -9,7 +9,8 @@ export enum InterviewType {
 }
 
 export enum InterviewStatus {
-  SCHEDULED = "scheduled",
-  COMPLETED = "completed",
-  CANCELLED = "cancelled"
+  ACTIVE = "active",
+  COMPLETE = "complete",
+  EXPIRED = "expired",
+  INACTIVE = "inactive"
 }

@@ -1,5 +1,5 @@
 import { connectDb } from "./config/db";
-import { app } from "./app";
+import { app, httpServer } from "./app";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 connectDb()
   .then(() => {
     console.log("Connected to MongoDB");
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   })

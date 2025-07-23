@@ -6,7 +6,7 @@ import { Roles, InterviewType, InterviewStatus } from "../../constants/enum";
 import { sendInterviewInvite } from "../../Utils/email";
 import { Hr } from "../../models/hr";
 import { IInterview } from "../../interfaces/interview";
-import { error } from "console";
+import jwt from 'jsonwebtoken';
 
 // Interview invitation handler
 export const interviewInvitationHandler = async (
@@ -15,6 +15,10 @@ export const interviewInvitationHandler = async (
 ) => {
 
   const hrId = req.user._id; // Get HR ID from authenticated user
+  const frontendURL = process.env.NODE_ENV === 'production'
+  ? 'https://app.hirecatalyze.com'
+  : 'http://localhost:4200';
+
 
   const { candidateEmail, candidateName, interviewType, jobDescription } = req.body;
 
@@ -39,6 +43,10 @@ export const interviewInvitationHandler = async (
         { new: true, upsert: true, session }
       );
 
+      if(!candidate) {
+        throw new Error('Candidate not found')
+      }
+
       if (candidate.role === 'hr') {
         throw new Error("Cannot invite an HR as a candidate");
       }
@@ -61,18 +69,35 @@ export const interviewInvitationHandler = async (
       if(!hrId || !candidate._id || !interviewId) {
         throw new Error ('HRID, CandidateID and Interview ID any of them is missing ')
       }
+
+      // Generate New token so we can send that token in link and verify from frontend.
+      const token = jwt.sign({
+        _id: candidate._id,
+        interviewId,
+        _hr: hrId,
+        email: candidate.email,
+        role: candidate.role
+      }, process.env.JWT_SECRET, { expiresIn: '24h' })
+      
+      if(!token) {
+        throw new Error("Token not found")
+      }
+
+
       
       // Enqueue email
       await sendInterviewInvite({
         to: candidate.email,
         name: candidate.firstName,
         subject: "You're Invited for an Interview",
-        message: `Hi ${candidate.firstName},<br><br>You have been scheduled for a <b>${interviewType}</b> interview.<br><br>
-        <a href="http://localhost:4200/ai-interview?uid=${candidate._id}&hrId=${hrId}&inteviewId=${interviewId}" style="padding: 10px 15px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px; display: inline-block;">
-          👉 Click here to Start Interview
-        </a><br><br>
-        
-        Good luck!`
+        message: `Hi ${candidate.firstName},<br><br>
+          You have been scheduled for a <b>${interviewType}</b> interview.<br><br>
+          <a href="${frontendURL}/interviews/ai-interview/${interviewId}?token=${token}" 
+            style="padding: 10px 15px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px; display: inline-block;">
+            👉 Click here to Start Interview
+          </a><br><br>
+          Good luck!`
+
       });
 
       await Hr.findOneAndUpdate(

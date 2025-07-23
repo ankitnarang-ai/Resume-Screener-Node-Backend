@@ -271,9 +271,6 @@ authRouter.post('/public/google-login', async (req: Request, res: any): Promise<
 // Add token verification endpoint
 authRouter.get("/verify-token", authMiddleware, async (req: any, res: any) => {
   try {
-
-    console.log("enter");
-    
     // If middleware passes, token is valid
     res.send({
       message: "Token is valid",

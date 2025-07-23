@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth";
-import { interviewInvitationHandler, interviewRejectionHandler } from "../../controllers/interview";
+import { getInterviews, interviewInvitationHandler, interviewRejectionHandler } from "../../controllers/interview";
+import { pagination } from "../../middleware/pagination";
 
 export const interviewRouter = Router();
 
 interviewRouter.post("/invite" , authMiddleware, interviewInvitationHandler);
-// interviewRouter.post("/invite" , interviewInvitationHandler);
 
 interviewRouter.post("/reject", authMiddleware, interviewRejectionHandler);
-// interviewRouter.post("/reject", interviewRejectionHandler);
+
+// Get all the interviews for particular user Id
+interviewRouter.get("/get-interviews/:id", authMiddleware, pagination, getInterviews)

@@ -5,6 +5,8 @@ import mongoose from "mongoose";
 import { Roles, InterviewType, InterviewStatus } from "../../constants/enum";
 import { sendInterviewInvite } from "../../Utils/email";
 import { Hr } from "../../models/hr";
+import { IInterview } from "../../interfaces/interview";
+import { error } from "console";
 
 // Interview invitation handler
 export const interviewInvitationHandler = async (
@@ -134,3 +136,37 @@ export const interviewRejectionHandler = async (
     session.endSession();
   }
 };
+
+// Get Interviews by candidate ID
+export const getInterviews = async (req: any, res: any) => {
+
+  try {
+    const candidateId = req.params.id;
+    const {page, limit, skip} = req.pagination;
+  
+    if (!candidateId) throw new Error('Candidate Id is required');
+
+    if (!mongoose.isValidObjectId(candidateId)) throw new Error('Id is not valid');
+
+    const totalDocuments = await Interview.countDocuments();
+
+    const interviews = await Interview.find<IInterview>({_candidate: candidateId})
+      .sort({createdBy: -1})
+      .skip(skip)
+      .limit(limit);
+
+    res.send({
+      data: interviews,
+      currentPage: page,
+      totalDocuments,
+      totalPages: Math.ceil(totalDocuments / limit),
+      hasNextPage: skip + limit < totalDocuments,
+      hasPrevPage: page > 1
+    })
+
+  } catch(error) {
+      res.send({
+        error: error 
+      })
+  }
+}
